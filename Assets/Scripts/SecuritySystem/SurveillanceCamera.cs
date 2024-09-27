@@ -1,18 +1,20 @@
-using System;
 using UnityEngine;
 
+[RequireComponent(typeof(HouseAlarm))]
 public class SurveillanceCamera : MonoBehaviour
 {
-    private bool _isRobberInHouse = false;
+    private HouseAlarm _almor;
 
-    public event Action<bool> IsRobberInHouse;
+    private void Start()
+    {
+        _almor = GetComponent<HouseAlarm>();
+    }
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.GetComponent<Robber>())
         {
-            _isRobberInHouse = true;
-            IsRobberInHouse?.Invoke(_isRobberInHouse);
+            _almor.SoundAlarm();
         }
     }
 
@@ -20,8 +22,7 @@ public class SurveillanceCamera : MonoBehaviour
     {
         if (other.GetComponent<Robber>())
         {
-            _isRobberInHouse = false;
-            IsRobberInHouse?.Invoke(_isRobberInHouse);
+            _almor.SilenceAlarm();
         }
     }
 }
