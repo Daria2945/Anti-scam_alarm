@@ -1,52 +1,65 @@
+using System.Collections;
 using UnityEngine;
 
-[RequireComponent(typeof(AudioSource))]
+[RequireComponent(typeof(AudioSource), typeof(SurveillanceCamera))]
 public class HouseAlarm : MonoBehaviour
 {
     [SerializeField] private float _volumeChangeSteep = 0.4f;
 
+    private SurveillanceCamera _camera;
     private AudioSource _audioSource;
 
     private float _minVolume = 0f;
     private float _maxVolume = 1f;
     private float _currentVolume;
 
-    private bool _isRobberInHouse = false;
+    private Coroutine _coroutine;
 
     private void Awake()
     {
+        _camera = GetComponent<SurveillanceCamera>();
         _audioSource = GetComponent<AudioSource>();
         _audioSource.volume = _minVolume;
         _currentVolume = _minVolume;
     }
 
-    private void Update()
+    private void OnEnable()
     {
-        if (_isRobberInHouse)
-        {
-            ChangeVolume(_volumeChangeSteep);
-        }
-        
-        if(_isRobberInHouse == false && _currentVolume > _minVolume)
-        {
-            ChangeVolume(-_volumeChangeSteep);
-        }
+        _camera.IsRobberInHouse += StartChangeVolume;
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void OnDisable()
     {
-        if(other.GetComponent<Robber>())
-            _isRobberInHouse = true;
+        _camera.IsRobberInHouse -= StartChangeVolume;
     }
 
-    private void OnTriggerExit(Collider other)
+    private void StartChangeVolume(bool isRobberInHouse)
     {
-            _isRobberInHouse = false;
+        if (isRobberInHouse)
+            _coroutine = StartCoroutine(ChangeVolume(_volumeChangeSteep));
+        else
+            _coroutine = StartCoroutine(ChangeVolume(-_volumeChangeSteep));
     }
 
-    private void ChangeVolume(float volumeChangeSteep)
+    private void ChangeCurrentVolume(float volumeChangeSteep)
     {
         _currentVolume = Mathf.MoveTowards(_currentVolume, _maxVolume, volumeChangeSteep * Time.deltaTime);
         _audioSource.volume = _currentVolume;
+    }
+
+    private IEnumerator ChangeVolume(float volumeChangeStep)
+    {
+        while (true)
+        {
+            ChangeCurrentVolume(volumeChangeStep);
+
+            if (_currentVolume >= _maxVolume)
+                StopCoroutine(_coroutine);
+
+            if (_currentVolume <= _minVolume)
+                StopCoroutine(_coroutine);
+
+            yield return null;
+        }
     }
 }
